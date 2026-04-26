@@ -1,8 +1,9 @@
 const catchAsync = require(`${__dirname}/../utils/catchAsync`);
 const AppError = require(`${__dirname}/../utils/appError`);
 const Task = require(`${__dirname}/../models/taskModel`);
-const jwt = require('jsonwebtoken');
 
+// helper function to filter  body
+const filterObj = require(`${__dirname}/../utils/filterObj`);
 
 exports.createTask = catchAsync (async (req , res , next) => {
     // Attaching the task to its user
@@ -10,7 +11,7 @@ exports.createTask = catchAsync (async (req , res , next) => {
 
     const task = await Task.create(req.body);
 
-    return res.status(200).json({
+    return res.status(201).json({
         status: "success",
         task
     })
@@ -18,7 +19,7 @@ exports.createTask = catchAsync (async (req , res , next) => {
 
 
 exports.getAllTasks = catchAsync (async (req , res , next) => {
-    const tasks = await Task.find({user: jwt.decode(req.get('Authorization').split(" ")[1]).id});
+    const tasks = await Task.find({user: req.user.id});
 
     return res.status(200).json({
         status: "success",
@@ -28,11 +29,14 @@ exports.getAllTasks = catchAsync (async (req , res , next) => {
 
 
 exports.getTask = catchAsync (async (req , res , next) => {
-    const task = await Task.findById(req.url.replace('/' , ''));
+    const task = await Task.findOne({
+        _id: req.params.id,
+        user: req.user.id
+    });
 
     // checking if the task belongs to the logged in user
-    if(! (task.user.toString() === jwt.decode(req.get('Authorization').split(" ")[1]).id)){
-        return next(new AppError(`You don't have access to this task` , 403)) // 403 -> forbidden
+    if(!task){
+        return next(new AppError(`No task found with that ID, or you do not have access to it` , 404))
     }
 
     return res.status(200).json({
@@ -43,30 +47,33 @@ exports.getTask = catchAsync (async (req , res , next) => {
 
 
 exports.updateTask = catchAsync (async (req , res , next) => {
-    const task = await Task.findById(req.url.replace('/' , ''));
-
-    // checking if the task belongs to the logged in user
-    if(! (task.user.toString() === jwt.decode(req.get('Authorization').split(" ")[1]).id)){
-        return next(new AppError(`You don't have access to this task` , 403)) // 403 -> forbidden
-    }
-
+    
+    const filteredBody = filterObj(
+        req.body , 
+        'title',
+        'description',
+        'status',
+        'priority',
+        'dueDate'
+    );
     
     // updating the task
-    const updatedTask = await Task.findByIdAndUpdate(
-        task.id,
+    const updatedTask = await Task.findOneAndUpdate(
         {
-            title: req.body.title || task.title,
-            description: req.body.description || task.description,
-            status: req.body.status || task.status,
-            priority: req.body.priority || task.priority,
-            dueDate: req.body.dueDate || task.dueDate,
-            updatedAt: Date.now()
+            _id: req.params.id,
+            user: req.user.id
         },
+        filteredBody,
         {
             returnDocument: 'after',
             runValidators: true
         }
     );
+
+    // checking if the task belongs to the logged in user
+    if(!updatedTask){
+        return next(new AppError(`No task found with that ID, or you do not have access to it` , 404))
+    }
 
     
     return res.status(200).json({
@@ -77,11 +84,14 @@ exports.updateTask = catchAsync (async (req , res , next) => {
 
 
 exports.deleteTask = catchAsync (async (req , res , next) => {
-    const task = await Task.findById(req.url.replace('/' , ''));
+    const task = await Task.findOne({
+        _id: req.params.id,
+        user: req.user.id
+    });
 
     // checking if the task belongs to the logged in user
-    if(! (task.user.toString() === jwt.decode(req.get('Authorization').split(" ")[1]).id)){
-        return next(new AppError(`You don't have access to this task` , 403)) // 403 -> forbidden
+    if(!task){
+        return next(new AppError(`No task found with that ID, or you do not have access to it` , 404))
     }
 
     await Task.findByIdAndDelete(task.id);

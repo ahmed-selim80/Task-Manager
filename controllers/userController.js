@@ -1,12 +1,16 @@
-const User = require("../models/userModel");
-const AppError = require("../utils/appError");
-const catchAsync = require(`./../utils/catchAsync`);
+const User = require(`${__dirname}/../models/userModel`);
+const AppError = require(`${__dirname}/../utils/appError`);
+const catchAsync = require(`${__dirname}/../utils/catchAsync`);
+const apiFeatures = require(`${__dirname}/../utils/apiFeatures`);
+
+// helper function to filter  body
+const filterObj = require(`${__dirname}/../utils/filterObj`);
 
 
 //  ADMIN OPERATIONS -------------------------------------------------------
 
 module.exports.getUser = catchAsync (async (req, res , next) => {
-    const user = await User.findById(req.url.replace('/' , ''));
+    const user = await User.findById(req.params.id);
 
     if(!user) return next(new AppError("This user doesn't exist or wrong id" , 400)); // 400 -> bad request
 
@@ -18,34 +22,50 @@ module.exports.getUser = catchAsync (async (req, res , next) => {
 
 
 module.exports.updateUser = catchAsync (async (req, res , next) => {
-    const user = await User.findByIdAndUpdate(req.url.replace('/' , ''));
+    const filteredBody = filterObj(
+        req.body,
+        'name',
+        'email',
+        'role',
+        'active'
+    );
 
-    User.findByIdAndUpdate(user.id , {
-        name: req.body.name || user.name,
-        email: req.body.email || user.email,
-        password: req.body.password || user.password,
-        passwordConfirm: req.body.passwordConfirm || user.passwordConfirm,
-        role: req.body.role || user.role 
-    }, {new: true , runValidators: true})
+    const user = await User.findByIdAndUpdate(
+        req.params.id,
+        filteredBody,
+        {
+            new: true,
+            runValidators: true
+        }
+    );
 
+    if (!user) {
+        return next(new AppError('No user found with that ID', 404));
+    }
 
-    return res.status(200).json({
-        status: "success",
+    res.status(200).json({
+        status: 'success',
         user
     });
 })
 
 
 module.exports.deleteUser = catchAsync (async (req, res , next) => {
-    const user = await User.findByIdAndUpdate(req.url.replace('/' , '') , {active: false});
-    if(!user) return next(new AppError("This user doesn't exist or wrong id" , 400)); // 400 -> bad request
+    const user = await User.findByIdAndUpdate(req.params.id , {active: false});
+    if(!user) return next(new AppError("This user doesn't exist or wrong id" , 404));
 
     return res.status(204).end();
 })
 
 
 module.exports.createUser = catchAsync (async (req , res) => {
-    const user = await User.create(req.body);
+    const user = await User.create({
+        name: req.body.name,
+        email: req.body.email,
+        role: req.body.role,
+        password: req.body.password,
+        passwordConfirm: req.body.passwordConfirm
+    });
 
     return res.status(201).json({
         status: "success",
@@ -57,11 +77,15 @@ module.exports.createUser = catchAsync (async (req , res) => {
 module.exports.getAllUsers = catchAsync( async (req , res) => {
     const users = await User.find();
 
+    console.log(req.query);
+
     return res.status(200).json({
         status: "success",
         data: users
     })
 });
+
+
 
 // USER OPERATIONS ---------------------------------------------------------------
 
@@ -73,16 +97,16 @@ module.exports.deleteMe = catchAsync( async (req , res , next) => {
 
 
 module.exports.updateMe = catchAsync( async (req , res , next) => {
-    if(req.body.password || req.body.passwordConfirm) return next(new AppError(`You can't change your password here, please use "resetPassword"` , 403));
+    const filteredBody = filterObj(req.body, 'name', 'email');
 
-    console.log("Before updating user");
-
-    const user = await User.findByIdAndUpdate(req.user.id , {
-        name: req.body.name || req.user.name,
-        email: req.body.email || req.user.email,  
-    } , {new: true , runValidators: true})
-
-    console.log("after updating");
+    const user = await User.findByIdAndUpdate(
+        req.user.id,
+        filteredBody,
+        {
+            returnDocument: 'after',
+            runValidators: true
+        }
+    );
 
     return res.status(200).json({
         status: "success",
@@ -92,7 +116,6 @@ module.exports.updateMe = catchAsync( async (req , res , next) => {
 
 
 module.exports.getMe = catchAsync (async (req , res , next) => {
-    console.log("SDfsdfsf")
     const user = await User.findById(req.user.id);
     res.status(200).json({
         status: "success",

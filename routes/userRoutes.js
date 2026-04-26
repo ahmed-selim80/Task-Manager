@@ -19,9 +19,9 @@ router.patch('/updateMe'  , userController.updateMe);
 // Admin operations
 router.use(authController.restrictTo('admin'));
 router.get("/" ,userController.getAllUsers);
-router.get("/:userId"  , userController.getUser);
-router.patch("/:userId"  , userController.updateUser);
-router.delete("/:userId"  , userController.deleteUser);
+router.get("/:id"  , userController.getUser);
+router.patch("/:id"  , userController.updateUser);
+router.delete("/:id"  , userController.deleteUser);
 router.post("/createUser" ,userController.createUser);
 
 

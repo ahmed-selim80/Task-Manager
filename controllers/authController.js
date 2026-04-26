@@ -25,13 +25,18 @@ const signTokenAndSend =  function (statusCode , user , res){
 }
 
 module.exports.protect = catchAsync (async (req , res , next) => {
-    const token = req.get('Authorization').split(" ")[1];
+    let token;
+    // Checking to see if the token exists or not
+    if(req.headers.authorization && req.headers.authorization.startsWith("Bearer")){
+        token = req.get('Authorization').split(" ")[1];
+    }
     
     if(!token){
-        return next(new AppError(`You don't have permission to perform this action` , 403)) // 403 -> forbidden
+        return next(new AppError(`You don't have permission to perform this action` , 401)) // 401 -> not logged in , invalid token
     }
 
-    const user = await User.findById(jwt.decode(token).id);
+    const decoded = jwt.verify(token , process.env.JWT_SECRET)
+    const user = await User.findById(decoded.id);
 
     if(!user){
         return next(new AppError(`No user found` , 400));

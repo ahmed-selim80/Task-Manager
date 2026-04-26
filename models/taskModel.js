@@ -17,12 +17,14 @@ const taskSchema = new mongoose.Schema({
 
     status: {
         type: String,
-        enum: ['todo' , 'in-progress' , 'done']
+        enum: ['todo' , 'in-progress' , 'done'],
+        default: 'todo'
     },
 
     priority: {
         type: String,
-        enum: ['low' , 'medium' , 'high']
+        enum: ['low' , 'medium' , 'high'],
+        default: 'medium'
     },
 
     dueDate: Date,
@@ -36,15 +38,16 @@ const taskSchema = new mongoose.Schema({
 
     user: {
         type: mongoose.Schema.ObjectId,
-        ref: 'User'
+        ref: 'User',
+        required: [true , 'Task must belong to a user']
     }
 });
 
 // to make it easy to find users 
 taskSchema.index({ user: 1, createdAt: -1 });
 
-// To make sure the user has ONE running task by the same title
-taskSchema.index({ user: 1, title: 1 });
+// To make sure the user has ONE running task by the same title and improves search
+taskSchema.index({ user: 1, title: 1 } , {unique: true});
 
 
 const Task = mongoose.model("Task" , taskSchema);
