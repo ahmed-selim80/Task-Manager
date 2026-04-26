@@ -1,7 +1,7 @@
 const User = require(`${__dirname}/../models/userModel`);
 const AppError = require(`${__dirname}/../utils/appError`);
 const catchAsync = require(`${__dirname}/../utils/catchAsync`);
-const apiFeatures = require(`${__dirname}/../utils/apiFeatures`);
+const APIFeatures = require(`${__dirname}/../utils/apiFeatures`);
 
 // helper function to filter  body
 const filterObj = require(`${__dirname}/../utils/filterObj`);
@@ -75,12 +75,13 @@ module.exports.createUser = catchAsync (async (req , res) => {
 
 
 module.exports.getAllUsers = catchAsync( async (req , res) => {
-    const users = await User.find();
-
-    console.log(req.query);
+    const features = new APIFeatures(Task.find() , req.query).filter().sort().limitFields().paginate();
+    // executing the query
+    const tasks = await features.query;
 
     return res.status(200).json({
         status: "success",
+        results: users.length,
         data: users
     })
 });

@@ -6,24 +6,33 @@ const User = require("./userModel");
 const taskSchema = new mongoose.Schema({
     title: {
         type: String,
-        required: [true , 'A task MUST have a title'],
-        trim: true
+        required: [true , 'Task MUST have a title'],
+        trim: true,
+        minlength: [3, 'Task title must be at least 3 characters'],
+        maxlength: [100, 'Task title must be less than 100 characters']
     },
 
     description: {
         type: String,
-        trim: true
+        trim: true,
+        maxlength: [500, 'Description must be less than 500 characters']
     },
 
     status: {
         type: String,
-        enum: ['todo' , 'in-progress' , 'done'],
+        enum: {
+            values: ['todo', 'in-progress', 'done'],
+            message: 'Status must be todo, in-progress, or done'
+        },
         default: 'todo'
     },
 
     priority: {
         type: String,
-        enum: ['low' , 'medium' , 'high'],
+        enum: {
+            values: ['low', 'medium', 'high'],
+            message: 'Priority must be low, medium, or high'
+        },
         default: 'medium'
     },
 

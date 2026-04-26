@@ -1,6 +1,8 @@
 const catchAsync = require(`${__dirname}/../utils/catchAsync`);
 const AppError = require(`${__dirname}/../utils/appError`);
 const Task = require(`${__dirname}/../models/taskModel`);
+const APIFeatures = require(`${__dirname}/../utils/apiFeatures`);
+
 
 // helper function to filter  body
 const filterObj = require(`${__dirname}/../utils/filterObj`);
@@ -19,10 +21,16 @@ exports.createTask = catchAsync (async (req , res , next) => {
 
 
 exports.getAllTasks = catchAsync (async (req , res , next) => {
-    const tasks = await Task.find({user: req.user.id});
+    const features = new APIFeatures(Task.find({user: req.user.id}) , req.query).filter().sort().limitFields().paginate();
+    // executing the query
+    const tasks = await features.query.populate({
+        path: 'user',
+        select: 'name email'
+    });
 
     return res.status(200).json({
         status: "success",
+        results: tasks.length,
         data : {tasks}
     });
 });
@@ -99,3 +107,23 @@ exports.deleteTask = catchAsync (async (req , res , next) => {
     return res.status(204).end()
 });
 
+
+exports.getTaskStats = catchAsync (async (req , res , next) => {
+    const stats = await Task.aggregate([
+        {
+            $match: {user: req.user.id}
+        },
+
+        {
+            $group: {
+                _id : '$status',
+                count: {$sum : 1}
+            }
+        }
+    ]);
+
+    res.status(200).json({
+        status: "success",
+        stats
+    })
+})
