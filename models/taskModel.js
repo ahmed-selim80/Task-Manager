@@ -1,5 +1,4 @@
 const mongoose = require("mongoose");
-const validator = require("validator");
 const User = require("./userModel");
 
 
@@ -52,11 +51,19 @@ const taskSchema = new mongoose.Schema({
     }
 });
 
+taskSchema.pre("save" , () => {
+    // if he has modified anything other than password , we don't wanna hash it again
+    if(!this.isModified()) return;
+
+    // other than that update updatedAt
+    this.updatedAt = Date.now();
+})
+
 // to make it easy to find users 
 taskSchema.index({ user: 1, createdAt: -1 });
 
-// To make sure the user has ONE running task by the same title and improves search
-taskSchema.index({ user: 1, title: 1 } , {unique: true});
+// improves search
+taskSchema.index({ user: 1, title: 1 });
 
 
 const Task = mongoose.model("Task" , taskSchema);

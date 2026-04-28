@@ -5,6 +5,8 @@ const userController = require(`${__dirname}/../controllers/userController`);
 const authController = require(`${__dirname}/../controllers/authController`);
 
 
+router.post('/forgotPassword' , authController.forgotPassword);
+router.patch('/resetPassword/:token' , authController.resetPassword);
 
 router.use(authController.protect);
 
@@ -15,9 +17,9 @@ router.patch('/updateMe'  , userController.updateMe);
 
 
 
+router.use(authController.restrictTo('admin'));
 
 // Admin operations
-router.use(authController.restrictTo('admin'));
 router.get("/" ,userController.getAllUsers);
 router.get("/:id"  , userController.getUser);
 router.patch("/:id"  , userController.updateUser);
