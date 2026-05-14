@@ -99,7 +99,12 @@ module.exports.signup = catchAsync (async (req , res , next) => {
 
 
 module.exports.login = catchAsync (async (req , res , next) => {
-    // get user
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+        return next(new AppError('Please provide email and password', 400));
+    }
+
     const user =  await User.findOne({email : req.body.email}).select("+password");
 
     // check if user exists

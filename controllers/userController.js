@@ -87,7 +87,6 @@ module.exports.getAllUsers = catchAsync( async (req , res) => {
 });
 
 
-
 // USER OPERATIONS ---------------------------------------------------------------
 
 module.exports.deleteMe = catchAsync( async (req , res , next) => {
