@@ -1,23 +1,24 @@
 // server.js
 
-const mongoose = require('mongoose');
-const dotenv = require('dotenv');
+const mongoose = require("mongoose");
+const dotenv = require("dotenv");
 
-dotenv.config({ path: './config.env' });
+dotenv.config({ path: "./config.env" });
 
-const app = require('./app');
+const app = require("./app");
 
-const DB = process.env.DB_CONNECTION_STRING
-  .replace('<USERNAME>', process.env.DB_USERNAME)
-  .replace('<PASSWORD>', process.env.DB_PASSWORD);
+const DB = process.env.DB_CONNECTION_STRING.replace(
+  "<USERNAME>",
+  process.env.DB_USERNAME,
+).replace("<PASSWORD>", process.env.DB_PASSWORD);
 
 mongoose
   .connect(DB)
   .then(() => {
-    console.log('Database connected successfully');
+    console.log("Database connected successfully");
   })
   .catch((err) => {
-    console.error('ERROR CONNECTING TO DATABASE:', err.message);
+    console.error("ERROR CONNECTING TO DATABASE:", err.message);
     process.exit(1);
   });
 
