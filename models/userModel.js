@@ -97,12 +97,10 @@ userSchema.pre("save" , async function(){
 
 
 
-userSchema.pre('save', function(next) {
-  if (!this.isModified('password') || this.isNew) return next();
+userSchema.pre('save', function() {
+  if (!this.isModified('password') || this.isNew) return;
 
   this.passwordChangedAt = Date.now() - 1000;
-
-  next();
 });
 
 
