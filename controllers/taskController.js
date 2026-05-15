@@ -1,129 +1,143 @@
-const catchAsync = require(`${__dirname}/../utils/catchAsync`);
-const AppError = require(`${__dirname}/../utils/appError`);
-const Task = require(`${__dirname}/../models/taskModel`);
-const APIFeatures = require(`${__dirname}/../utils/apiFeatures`);
+const catchAsync = require('../utils/catchAsync');
+const AppError = require('../utils/appError');
+const Task = require('../models/taskModel');
+const APIFeatures = require('../utils/apiFeatures');
+const filterObj = require('../utils/filterObj');
 
+exports.createTask = catchAsync(async (req, res, next) => {
+  const task = await Task.create({
+    title: req.body.title,
+    description: req.body.description,
+    status: req.body.status,
+    priority: req.body.priority,
+    dueDate: req.body.dueDate,
+    user: req.user.id,
+  });
 
-// helper function to filter  body
-const filterObj = require(`${__dirname}/../utils/filterObj`);
-
-exports.createTask = catchAsync (async (req , res , next) => {
-    // Attaching the task to its user
-    req.body.user = req.user.id;
-
-    const task = await Task.create(req.body);
-
-    return res.status(201).json({
-        status: "success",
-        task
-    })
+  return res.status(201).json({
+    status: 'success',
+    data: {
+      task,
+    },
+  });
 });
 
+exports.getAllTasks = catchAsync(async (req, res, next) => {
+  const features = new APIFeatures(Task.find({ user: req.user.id }), req.query)
+    .filter()
+    .sort()
+    .limitFields()
+    .paginate();
 
-exports.getAllTasks = catchAsync (async (req , res , next) => {
-    const features = new APIFeatures(Task.find({user: req.user.id}) , req.query).filter().sort().limitFields().paginate();
-    // executing the query
-    const tasks = await features.query.populate({
-        path: 'user',
-        select: 'name email'
-    });
+  const tasks = await features.query;
 
-    return res.status(200).json({
-        status: "success",
-        results: tasks.length,
-        data : {tasks}
-    });
+  return res.status(200).json({
+    status: 'success',
+    results: tasks.length,
+    data: {
+      tasks,
+    },
+  });
 });
 
+exports.getTask = catchAsync(async (req, res, next) => {
+  const task = await Task.findOne({
+    _id: req.params.id,
+    user: req.user.id,
+  });
 
-exports.getTask = catchAsync (async (req , res , next) => {
-    const task = await Task.findOne({
-        _id: req.params.id,
-        user: req.user.id
-    });
-
-    // checking if the task belongs to the logged in user
-    if(!task){
-        return next(new AppError(`No task found with that ID, or you do not have access to it` , 404))
-    }
-
-    return res.status(200).json({
-        status: "success",
-        task
-    })
-});
-
-
-exports.updateTask = catchAsync (async (req , res , next) => {
-    
-    const filteredBody = filterObj(
-        req.body , 
-        'title',
-        'description',
-        'status',
-        'priority',
-        'dueDate'
+  if (!task) {
+    return next(
+      new AppError('No task found with that ID, or you do not have access to it', 404)
     );
-    
-    // updating the task
-    const updatedTask = await Task.findOneAndUpdate(
-        {
-            _id: req.params.id,
-            user: req.user.id
-        },
-        filteredBody,
-        {
-            returnDocument: 'after',
-            runValidators: true
-        }
+  }
+
+  return res.status(200).json({
+    status: 'success',
+    data: {
+      task,
+    },
+  });
+});
+
+exports.updateTask = catchAsync(async (req, res, next) => {
+  const filteredBody = filterObj(
+    req.body,
+    'title',
+    'description',
+    'status',
+    'priority',
+    'dueDate'
+  );
+
+  const task = await Task.findOneAndUpdate(
+    {
+      _id: req.params.id,
+      user: req.user.id,
+    },
+    filteredBody,
+    {
+      new: true,
+      runValidators: true,
+    }
+  );
+
+  if (!task) {
+    return next(
+      new AppError('No task found with that ID, or you do not have access to it', 404)
     );
+  }
 
-    // checking if the task belongs to the logged in user
-    if(!updatedTask){
-        return next(new AppError(`No task found with that ID, or you do not have access to it` , 404))
-    }
-
-    
-    return res.status(200).json({
-        status: "success",
-        updatedTask
-    })
+  return res.status(200).json({
+    status: 'success',
+    data: {
+      task,
+    },
+  });
 });
 
+exports.deleteTask = catchAsync(async (req, res, next) => {
+  const task = await Task.findOneAndDelete({
+    _id: req.params.id,
+    user: req.user.id,
+  });
 
-exports.deleteTask = catchAsync (async (req , res , next) => {
-    const task = await Task.findOne({
-        _id: req.params.id,
-        user: req.user.id
-    });
+  if (!task) {
+    return next(
+      new AppError('No task found with that ID, or you do not have access to it', 404)
+    );
+  }
 
-    // checking if the task belongs to the logged in user
-    if(!task){
-        return next(new AppError(`No task found with that ID, or you do not have access to it` , 404))
-    }
-
-    await Task.findByIdAndDelete(task.id);
-
-    return res.status(204).end()
+  return res.status(204).json({
+    status: 'success',
+    data: null,
+  });
 });
 
+exports.getTaskStats = catchAsync(async (req, res, next) => {
+  const stats = await Task.aggregate([
+    {
+      $match: {
+        user: req.user._id,
+      },
+    },
+    {
+      $group: {
+        _id: '$status',
+        count: { $sum: 1 },
+      },
+    },
+    {
+      $sort: {
+        count: -1,
+      },
+    },
+  ]);
 
-exports.getTaskStats = catchAsync (async (req , res , next) => {
-    const stats = await Task.aggregate([
-        {
-            $match: {user: req.user.id}
-        },
-
-        {
-            $group: {
-                _id : '$status',
-                count: {$sum : 1}
-            }
-        }
-    ]);
-
-    res.status(200).json({
-        status: "success",
-        stats
-    })
-})
+  return res.status(200).json({
+    status: 'success',
+    data: {
+      stats,
+    },
+  });
+});

@@ -8,11 +8,9 @@ const router = express.Router();
 router.use(authController.protect);
 
 
-router.post('/createTask' , taskController.createTask);
+router.get('/stats' , taskController.getTaskStats);
 
-
-router.route('/').get(taskController.getAllTasks)
-router.get('/getTaskStats' , taskController.getTaskStats);
+router.route('/').get(taskController.getAllTasks).post(taskController.createTask)
 
 
 

@@ -1,14 +1,23 @@
 {
-  "name": "task-manager",
+  "name": "task-manager-api",
   "version": "1.0.0",
-  "description": "",
-  "main": "app.js",
+  "description": "A RESTful Task Manager API built with Node.js, Express, MongoDB, Mongoose, JWT authentication, authorization, password reset, filtering, sorting, pagination, and user-owned task management.",
+  "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js",
     "start:dev": "nodemon server.js"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "nodejs",
+    "express",
+    "mongodb",
+    "mongoose",
+    "jwt",
+    "rest-api",
+    "task-manager",
+    "backend"
+  ],
+  "author": "Ahmed Selim",
   "license": "ISC",
   "dependencies": {
     "bcrypt": "^6.0.0",
@@ -22,5 +31,8 @@
   },
   "devDependencies": {
     "nodemon": "^3.1.14"
+  },
+  "engines": {
+    "node": "22.x"
   }
 }

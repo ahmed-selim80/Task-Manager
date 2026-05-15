@@ -5,8 +5,6 @@ const userController = require(`${__dirname}/../controllers/userController`);
 const authController = require(`${__dirname}/../controllers/authController`);
 
 
-router.post('/forgotPassword' , authController.forgotPassword);
-router.patch('/resetPassword/:token' , authController.resetPassword);
 
 router.use(authController.protect);
 

@@ -16,7 +16,7 @@ module.exports.getUser = catchAsync (async (req, res , next) => {
 
     res.status(200).json({
         status: "success",
-        user
+        data: {user}
     })
 })
 
@@ -45,7 +45,7 @@ module.exports.updateUser = catchAsync (async (req, res , next) => {
 
     res.status(200).json({
         status: 'success',
-        user
+        data: {user}
     });
 })
 
@@ -69,21 +69,27 @@ module.exports.createUser = catchAsync (async (req , res) => {
 
     return res.status(201).json({
         status: "success",
-        user
+        data: {user}
     })
 });
 
 
-module.exports.getAllUsers = catchAsync( async (req , res) => {
-    const features = new APIFeatures(Task.find() , req.query).filter().sort().limitFields().paginate();
-    // executing the query
-    const tasks = await features.query;
+// controllers/userController.js
 
-    return res.status(200).json({
-        status: "success",
-        results: users.length,
-        data: users
-    })
+module.exports.getAllUsers = catchAsync(async (req, res, next) => {
+  const features = new APIFeatures(User.find(), req.query)
+    .filter()
+    .sort()
+    .limitFields()
+    .paginate();
+
+  const users = await features.query;
+
+  return res.status(200).json({
+    status: 'success',
+    results: users.length,
+    data: {users}
+  });
 });
 
 
@@ -110,7 +116,7 @@ module.exports.updateMe = catchAsync( async (req , res , next) => {
 
     return res.status(200).json({
         status: "success",
-        user
+        data : {user}
     });
 })
 
@@ -119,6 +125,6 @@ module.exports.getMe = catchAsync (async (req , res , next) => {
     const user = await User.findById(req.user.id);
     res.status(200).json({
         status: "success",
-        user
+        data : {user}
     })
 })
