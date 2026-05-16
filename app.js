@@ -3,8 +3,6 @@
 const express = require('express');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
-const mongoSanitize = require('express-mongo-sanitize');
-const hpp = require('hpp');
 const cors = require('cors');
 const compression = require('compression');
 const morgan = require('morgan');
@@ -20,25 +18,12 @@ const authRouter = require('./routes/authRoutes');
 
 const app = express();
 
-/*
-  Trust proxy is useful when deploying behind services like Render, Railway, Heroku, etc.
-  It helps Express correctly understand the original client IP for rate limiting.
-*/
 app.set('trust proxy', 1);
 
-/*
-  Security HTTP headers
-  Helmet sets several important headers that make the API more secure.
-*/
+// Security HTTP headers
 app.use(helmet());
 
-/*
-  CORS
-  For now, allow all origins because this is an API project and you may test it from Postman,
-  a frontend app, or documentation tools.
-
-  Later, when you build a frontend, restrict origin to your frontend domain.
-*/
+// CORS
 app.use(
   cors({
     origin: '*',
@@ -47,17 +32,12 @@ app.use(
   })
 );
 
-/*
-  Development logging
-*/
+// Development logging
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
 
-/*
-  Global rate limiter
-  Limits repeated requests from the same IP.
-*/
+// Rate limiting
 const limiter = rateLimit({
   max: 100,
   windowMs: 60 * 60 * 1000,
@@ -69,46 +49,35 @@ const limiter = rateLimit({
 
 app.use('/api', limiter);
 
-/*
-  Body parser
-  Limits request body size to prevent very large payload attacks.
-*/
+// Body parser
 app.use(express.json({ limit: '10kb' }));
 
-/*
-  Data sanitization against NoSQL query injection
-  Removes MongoDB operators like $gt, $ne, $or from req.body, req.query, and req.params.
-*/
-app.use(mongoSanitize());
 
-/*
-  Prevent HTTP parameter pollution
-  Example attack:
-  /api/v1/tasks?status=todo&status=done
+const sanitizeNoSQL = (obj) => {
+  if (!obj || typeof obj !== 'object') return;
 
-  Whitelist fields that you intentionally allow to appear multiple times.
-*/
-app.use(
-  hpp({
-    whitelist: [
-      'status',
-      'priority',
-      'dueDate',
-      'createdAt',
-      'updatedAt',
-    ],
-  })
-);
+  Object.keys(obj).forEach((key) => {
+    if (key.startsWith('$') || key.includes('.')) {
+      delete obj[key];
+      return;
+    }
 
-/*
-  Compress response bodies for better performance.
-*/
+    if (typeof obj[key] === 'object') {
+      sanitizeNoSQL(obj[key]);
+    }
+  });
+};
+
+app.use((req, res, next) => {
+  sanitizeNoSQL(req.body);
+  sanitizeNoSQL(req.params);
+  next();
+});
+
+// Compress responses
 app.use(compression());
 
-/*
-  Root route
-  Useful when someone opens the deployed Render URL directly.
-*/
+// Root route
 app.get('/', (req, res) => {
   res.status(200).json({
     status: 'success',
@@ -123,10 +92,7 @@ app.get('/', (req, res) => {
   });
 });
 
-/*
-  Health check route
-  Useful for deployment checks and quick uptime testing.
-*/
+// Health check route
 app.get('/health', (req, res) => {
   res.status(200).json({
     status: 'success',
@@ -135,24 +101,17 @@ app.get('/health', (req, res) => {
   });
 });
 
-/*
-  API routes
-*/
+// API routes
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/users', userRouter);
 app.use('/api/v1/tasks', taskRouter);
 
-/*
-  404 handler for unknown routes
-  Express 5 supports this named wildcard syntax.
-*/
-app.all('/{*splat}', (req, res, next) => {
+// 404 handler for unknown routes
+app.all('*', (req, res, next) => {
   next(new AppError(`Can't find ${req.originalUrl} on this server`, 404));
 });
 
-/*
-  Global error handler
-*/
+// Global error handler
 app.use(globalErrorHandler);
 
 module.exports = app;
