@@ -138,7 +138,7 @@ http://localhost:3000/api/v1
 ### Production
 
 ```txt
-https://your-render-url.onrender.com/api/v1
+https://task-manager-gc2j.onrender.com/
 ```
 
 ---
@@ -148,7 +148,7 @@ https://your-render-url.onrender.com/api/v1
 Full API documentation is available here:
 
 ```txt
-PASTE_YOUR_PUBLISHED_POSTMAN_DOCUMENTATION_LINK_HERE
+https://documenter.getpostman.com/view/48914644/2sBXqQHJwh
 ```
 
 The documentation includes all available endpoints, request bodies, authentication requirements, example responses, and testing flow.
